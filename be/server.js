@@ -13,45 +13,41 @@ const initRedis = async () => {
     await redisConn.connect()
 }
 
-app.get("/test", async (req, res) => {
-    try {
-        const cachedData = await redisConn.get("test")
+app.get('/weather/:city', async (req, res) => {
+    const { city } = req.params
+    if (!city) return res.status(400).json({ message: 'City is required' })
+    const citySensitive = city.toLowerCase()
+        
+    const apiUrl = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${citySensitive}/next7days?key=${process.env.WEATHER_API_KEY}&unitGroup=metric&include=days,hours,current&elements=datetime,tempmax,tempmin,temp,conditions,icon,precipprob`
 
-        if (cachedData) {
-            res.json(JSON.parse(cachedData))
-            console.log('have cached')
+    try {
+        const cachedWeatherData = await redisConn.get(citySensitive)
+
+        if (cachedWeatherData) {
+            res.status(200).json(JSON.parse(cachedWeatherData))
             return
         }
 
-        const data = {
-            id: 1,
-            name: 'peace'
-        }
-
-        console.log('no cached')
-        await redisConn.set("test", JSON.stringify(data))
-        res.json(data)
-
-    } catch (err) {
-        const axios = require('axios')
-        console.error("Error:", err)
-        res.status(500).json({ error: "An error occurred" })
-    }
-})
-
-const apiUrl = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/Bangkok?key=${process.env.WEATHER_API_KEY}`
-app.get('/weather', async (req, res) => {
-    try {
         const response = await axios.get(apiUrl)
         const data = response.data
-        return res.json({ message: data })
+
+        const city = data.address.toLowerCase()
+        const currentConditions = {
+            'temp': data.currentConditions.temp,
+            'humidity': data.currentConditions.humidity
+        }
+
+        const composeData = { currentConditions, 'days': data.days }
+
+        await redisConn.set(city, JSON.stringify(composeData), { EX: 7200 })
+
+        return res.json(composeData)
+
     } catch (err) {
         console.error("Error:", err.message)
         res.status(500).json({ error: "An error occurred" })
     }
 })
-
-
 
 app.listen(PORT, async (req, res) => {
     await initRedis()
