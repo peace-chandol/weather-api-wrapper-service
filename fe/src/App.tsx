@@ -1,35 +1,65 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import './style.css'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 
 function App() {
-  const [count, setCount] = useState(0)
+    const [citySearch, setCitySearch] = useState<string>()
+    const [data, setData] = useState<any>()
+    const [errMsg, setErrMsg] = useState<string>()
 
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    useEffect(() => {
+        setErrMsg('')
+        fetchData(citySearch!)
+    }, [citySearch])
+
+    async function fetchData(cityParam: string) {
+        if (!cityParam) return
+        const url = `http://localhost:3000/weather/${cityParam}`
+        try {
+            const response = await axios.get(url)
+            console.log('this is log data', response.data)
+            setData(response.data)
+            return response.data
+        } catch (err: any) {
+            console.error(err)
+            if (err.response.status === 400) {
+                setErrMsg('Invalid City or Country')
+            }
+            else {
+                setErrMsg('Error')
+            }
+            setData(null)
+        }
+    }
+
+    const searchBtn = document.getElementById('btn-search')
+    searchBtn?.addEventListener('click', (e: MouseEvent) => handleForm(e))
+
+    function handleForm(e: MouseEvent) {
+        const inputCity = document.getElementById('input-city') as HTMLInputElement
+        e.preventDefault()
+        setCitySearch(inputCity.value)
+        inputCity.value = ''
+    }
+
+    return (
+        <>
+            <h1>Weather Forecast</h1>
+            <form>
+                <label>City :</label>
+                <input type='text' id='input-city' />
+                <button type='submit' id='btn-search'>Search</button>
+            </form>
+
+            <div>
+                <h1>For show Weather!</h1>
+                {errMsg}
+                <h2>{data?.city}</h2>
+                <p>{data?.currentTemp}</p>
+                {/* DO: display data */}
+            </div>
+        </>
+    )
 }
 
 export default App
