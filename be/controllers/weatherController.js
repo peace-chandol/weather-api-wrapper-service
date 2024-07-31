@@ -10,7 +10,7 @@ const getWeather = async (req, res) => {
 
     try {
         const redisDB = await connectDB()
-        
+
         const cachedWeatherData = await redisDB.get(citySensitive)
 
         if (cachedWeatherData) {
@@ -24,7 +24,6 @@ const getWeather = async (req, res) => {
         const city = data.address.toLowerCase()
         const currentConditions = {
             'temp': data.currentConditions.temp,
-            'humidity': data.currentConditions.humidity
         }
 
         const composeData = { currentConditions, 'days': data.days }
