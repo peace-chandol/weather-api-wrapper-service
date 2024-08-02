@@ -21,20 +21,16 @@ const getWeather = async (req, res) => {
         const response = await axios.get(apiUrl)
         const data = response.data
 
-        const city = data.address.toLowerCase()
-        const currentConditions = {
-            'temp': data.currentConditions.temp,
-        }
+        const composeData = { 'city': data.resolvedAddress, 'currentTemp': data.currentConditions.temp, 'days': data.days }
 
-        const composeData = { currentConditions, 'days': data.days }
-
-        await redisDB.set(city, JSON.stringify(composeData), { EX: 7200 })
+        await redisDB.set(data.address.toLowerCase(), JSON.stringify(composeData), { EX: 7200 })
 
         return res.json(composeData)
 
     } catch (err) {
         console.error("Error:", err.message)
-        res.status(500).json({ error: "An error occurred" })
+        res.status(err.response.status)
+        res.json({ error: "An error occurred" })
     }
 }
 
