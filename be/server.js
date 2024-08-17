@@ -10,4 +10,4 @@ app.use(cors())
 
 app.use('/', require('./routes/weatherRoute')) 
 
-app.listen(PORT, () => () => console.log(`Server running on port ${PORT}`))
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
